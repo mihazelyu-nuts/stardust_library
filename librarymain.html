@@ -1,0 +1,1462 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1, user-scalable=no">
+<title>星屑の図書館 — 読書の記録</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Shippori+Mincho:wght@400;500;600;700&family=Zen+Maru+Gothic:wght@400;500;700;900&family=EB+Garamond:ital,wght@0,400;0,600;1,400&family=Cinzel:wght@400;600;700&family=Cormorant+Garamond:ital,wght@0,500;0,600;1,500&family=Dela+Gothic+One&family=Reggae+One&family=Yuji+Syuku&family=Courier+Prime:ital@0;1&display=swap" rel="stylesheet">
+<style>
+:root{
+  --void:#050a1f;
+  --dome-deep:#0e1a4a;
+  --dome-mid:#1c2f72;
+  --dome-glow:#3450a8;
+  --nebula-blue:#3a56b0;
+  --nebula-purple:#5d3f8f;
+  --milkyway:#c9d4f5;
+  --starlight:#f4ecd8;
+  --gold-dust:#e8c987;
+  --gold-dust-soft:#e8c98766;
+  --brass:#c9a15a;
+  --silver:#f1f4fb;
+  --wood-deep:#1c1310;
+  --wood-mid:#3a2416;
+  --wood-light:#5c3a22;
+  --wood-grain:#2c1c12;
+  --leather:#4a2418;
+  --ink:#eae6f5;
+  --ink-dim:#a39fc4;
+  --panel-bg:#0f1230ee;
+  --panel-border:#4a3f8a;
+  --danger:#c96a6a;
+  --focus:#e8c987;
+  font-size:16px;
+}
+*{box-sizing:border-box;}
+html,body{height:100%;}
+body{
+  margin:0;
+  background:var(--void);
+  color:var(--ink);
+  font-family:'Zen Maru Gothic','Hiragino Maru Gothic ProN',sans-serif;
+  overflow-x:hidden;
+  -webkit-font-smoothing:antialiased;
+}
+::selection{background:var(--gold-dust);color:#1a1030;}
+:focus-visible{outline:3px solid var(--focus);outline-offset:2px;border-radius:4px;}
+button{font-family:inherit;cursor:pointer;}
+
+/* ============ TOPBAR ============ */
+.topbar{
+  position:fixed;top:0;left:0;right:0;z-index:60;
+  display:flex;align-items:center;justify-content:space-between;
+  padding:14px 22px;
+  background:linear-gradient(to bottom, rgba(4,5,13,.94), rgba(4,5,13,0));
+  pointer-events:none;
+}
+.topbar > *{pointer-events:auto;}
+.brand{
+  font-family:'Shippori Mincho',serif;
+  font-size:1.35rem;
+  letter-spacing:.08em;
+  color:var(--gold-dust);
+  display:flex;align-items:center;gap:10px;
+  text-shadow:0 0 18px rgba(232,201,135,.5);
+}
+.brand .glyph{font-size:1.1rem;filter:drop-shadow(0 0 6px var(--gold-dust));}
+.topbar-actions{display:flex;gap:10px;align-items:center;}
+.icon-btn{
+  width:42px;height:42px;border-radius:50%;
+  border:1px solid var(--panel-border);
+  background:rgba(20,25,60,.75);
+  color:var(--ink);
+  font-size:1.15rem;
+  display:flex;align-items:center;justify-content:center;
+  transition:transform .2s ease, box-shadow .2s ease, background .2s ease;
+}
+.icon-btn:hover{background:rgba(60,50,110,.85);box-shadow:0 0 16px rgba(232,201,135,.35);transform:translateY(-1px);}
+.reader-chip{
+  font-size:.8rem;color:var(--ink-dim);
+  background:rgba(20,25,60,.65);border:1px solid var(--panel-border);
+  padding:8px 14px;border-radius:20px;
+  display:flex;align-items:center;gap:8px;
+  cursor:pointer;
+}
+.reader-chip b{color:var(--starlight);font-weight:700;}
+
+/* ============ SCENE / DOME (planetarium-style) ============ */
+.scene{position:relative;min-height:100vh;}
+
+.dome{
+  position:relative;
+  height:84vh;
+  min-height:580px;
+  overflow:hidden;
+  background:
+    radial-gradient(ellipse 95% 75% at 50% 30%, var(--dome-glow) 0%, var(--dome-mid) 38%, var(--dome-deep) 62%, var(--void) 92%);
+}
+.dome::before{ /* dome rim vignette + horizon glass reflection */
+  content:"";position:absolute;inset:0;
+  background:radial-gradient(ellipse at 50% 100%, transparent 34%, rgba(5,10,31,.95) 78%);
+  pointer-events:none;z-index:3;
+}
+.dome-arches{
+  position:absolute;left:0;right:0;bottom:0;height:44%;pointer-events:none;z-index:2;opacity:.9;
+}
+.dome-title-wrap{
+  position:absolute;left:50%;top:15%;transform:translateX(-50%);
+  text-align:center;z-index:5;pointer-events:none;width:min(90vw,640px);
+}
+.dome-title{
+  font-family:'Shippori Mincho',serif;
+  font-size:clamp(1.8rem,5vw,3rem);
+  letter-spacing:.16em;
+  margin:0;
+  background:linear-gradient(115deg,#8b93ab 0%,#f4f7ff 22%,#ffffff 38%,#c3c9dc 52%,#eef1fa 68%,#9098b0 100%);
+  -webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;color:#e9ecf5;
+  filter:drop-shadow(0 0 18px rgba(220,228,255,.45)) drop-shadow(0 2px 2px rgba(0,0,0,.5));
+}
+.dome-tagline{
+  margin:10px 0 0;font-family:'Zen Maru Gothic',sans-serif;font-size:clamp(.78rem,1.6vw,.95rem);
+  letter-spacing:.14em;color:var(--gold-dust-soft);text-shadow:0 0 12px rgba(232,201,135,.4);
+}
+.milkyway{
+  position:absolute;left:-10%;top:-6%;width:130%;height:70%;
+  background:linear-gradient(115deg, transparent 30%, rgba(201,212,245,.10) 45%, rgba(201,212,245,.16) 50%, rgba(201,212,245,.08) 55%, transparent 68%);
+  filter:blur(6px);
+  transform:rotate(-8deg);
+  pointer-events:none;
+}
+.dome-ribs{position:absolute;inset:0;pointer-events:none;opacity:.5;z-index:2;}
+.dome-ring{
+  position:absolute;left:50%;top:0;transform:translateX(-50%);
+  width:150vmin;height:150vmin;
+  border-radius:50%;
+  border:1px solid rgba(232,201,135,.10);
+  box-shadow:0 0 60px rgba(93,63,143,.2) inset;
+  pointer-events:none;
+}
+.dome-ring.r2{width:135vmin;height:135vmin;border-color:rgba(232,201,135,.07);}
+.dome-ring.r3{width:118vmin;height:118vmin;border-color:rgba(232,201,135,.045);}
+
+.star{position:absolute;border-radius:50%;background:#fff;pointer-events:none;}
+.star.tw{animation:twinkle var(--dur,3s) ease-in-out infinite;animation-delay:var(--delay,0s);}
+@keyframes twinkle{
+  0%,100%{opacity:var(--min-op,.25);}
+  50%{opacity:1;}
+}
+.star-sparkle{position:absolute;pointer-events:none;animation:twinkle var(--dur,4s) ease-in-out infinite;animation-delay:var(--delay,0s);}
+.star-sparkle svg{width:100%;height:100%;filter:drop-shadow(0 0 4px rgba(255,255,255,.7));}
+
+.planet{
+  position:absolute;border-radius:50%;pointer-events:none;
+  box-shadow:0 0 26px rgba(255,255,255,.22), inset -10px -10px 18px rgba(0,0,0,.55), inset 6px 6px 16px rgba(255,255,255,.22);
+}
+.planet.ringed::after{
+  content:"";position:absolute;left:50%;top:50%;
+  width:190%;height:36%;border:2px solid rgba(232,201,135,.35);
+  border-radius:50%;transform:translate(-50%,-50%) rotate(-18deg);
+  pointer-events:none;
+}
+
+/* orrery / astrolabe centerpiece */
+.orrery-wrap{
+  position:absolute;left:50%;top:62%;transform:translate(-50%,-50%);
+  width:min(38vmin,270px);height:min(38vmin,270px);
+  pointer-events:none;
+  filter:drop-shadow(0 0 30px rgba(232,201,135,.5));
+  z-index:2;
+}
+.orrery{width:100%;height:100%;animation:spin 100s linear infinite;}
+@keyframes spin{to{transform:rotate(360deg);}}
+.orrery .ring{fill:none;stroke:var(--brass);stroke-opacity:.6;}
+.orrery .ring2{fill:none;stroke:var(--gold-dust);stroke-opacity:.35;}
+.orrery .core{fill:url(#coreGlow);}
+
+.light-beam{
+  position:absolute;left:50%;top:8%;transform:translateX(-50%);
+  width:min(52vmin,380px);height:80%;
+  background:linear-gradient(to bottom, rgba(244,236,216,.20), rgba(244,236,216,.03) 65%, transparent);
+  clip-path:polygon(46% 0, 54% 0, 84% 100%, 16% 100%);
+  pointer-events:none;
+  mix-blend-mode:screen;
+  z-index:1;
+}
+.dust{position:absolute;border-radius:50%;background:var(--gold-dust);pointer-events:none;
+  box-shadow:0 0 6px var(--gold-dust);
+  animation:fall linear infinite;z-index:2;
+}
+@keyframes fall{
+  0%{transform:translateY(-10px) translateX(0);opacity:0;}
+  10%{opacity:1;}
+  90%{opacity:.8;}
+  100%{transform:translateY(60vh) translateX(var(--drift,10px));opacity:0;}
+}
+
+.dome-hint{
+  position:absolute;bottom:14px;left:50%;transform:translateX(-50%);
+  font-size:.82rem;color:var(--ink-dim);
+  background:rgba(8,10,26,.55);padding:6px 16px;border-radius:20px;
+  letter-spacing:.04em;text-align:center;
+  border:1px solid rgba(232,201,135,.15);z-index:4;
+}
+
+/* ============ FLOOR / BOOKSHELVES (warm scholarly wood) ============ */
+.floor{
+  position:relative;
+  background:
+    radial-gradient(ellipse 120% 60% at 50% 0%, rgba(93,63,143,.14), transparent 55%),
+    linear-gradient(to bottom, var(--void) 0%, var(--wood-deep) 10%, #150d09 100%);
+  padding:44px clamp(16px,4vw,56px) 90px;
+}
+.floor::before{
+  content:"";position:absolute;top:0;left:0;right:0;height:90px;
+  background:linear-gradient(to bottom, var(--void), transparent);
+  pointer-events:none;
+}
+.floor-boards{
+  position:absolute;inset:0;pointer-events:none;opacity:.5;
+  background:repeating-linear-gradient(90deg, rgba(0,0,0,0) 0 118px, rgba(0,0,0,.35) 118px 121px);
+  mix-blend-mode:multiply;
+}
+.shelf-room-title{
+  text-align:center;font-family:'Shippori Mincho',serif;
+  color:var(--gold-dust);font-size:1.05rem;letter-spacing:.14em;
+  margin:0 0 30px;opacity:.9;position:relative;
+}
+.shelf-grid{
+  display:grid;
+  grid-template-columns:repeat(auto-fit,minmax(290px,1fr));
+  gap:38px;
+  max-width:1200px;margin:0 auto;position:relative;
+  transition:opacity .35s ease;
+}
+.shelf-grid.has-zoom .shelf-unit:not(.zoomed){
+  opacity:.14;filter:blur(2px);pointer-events:none;transform:scale(.95);
+}
+.shelf-unit{
+  border-radius:6px;
+  background:
+    linear-gradient(180deg, rgba(255,255,255,.04), transparent 20%),
+    repeating-linear-gradient(97deg, var(--wood-mid) 0 3px, var(--wood-grain) 3px 5px, var(--wood-mid) 5px 9px),
+    linear-gradient(160deg, var(--wood-mid), var(--wood-deep));
+  border:1px solid rgba(185,138,74,.35);
+  box-shadow:0 20px 38px rgba(0,0,0,.55), inset 0 0 0 6px rgba(0,0,0,.25), inset 0 1px 0 rgba(255,255,255,.05);
+  padding:20px 16px 20px;
+  cursor:zoom-in;
+  transition:transform .45s cubic-bezier(.2,.8,.2,1), box-shadow .4s ease, opacity .4s ease, filter .4s ease;
+  transform-origin:center;
+  position:relative;
+}
+.shelf-unit::before{ /* brass corner accents */
+  content:"";position:absolute;inset:6px;border:1px solid rgba(185,138,74,.4);border-radius:3px;pointer-events:none;
+}
+.shelf-unit::after{ /* warm lamp glow from above */
+  content:"";position:absolute;left:50%;top:-14px;transform:translateX(-50%);
+  width:70%;height:34px;border-radius:50%;
+  background:radial-gradient(ellipse, rgba(255,214,140,.30), transparent 70%);
+  pointer-events:none;
+}
+.shelf-unit:hover{transform:translateY(-4px);box-shadow:0 24px 44px rgba(0,0,0,.6), 0 0 26px rgba(232,201,135,.14);}
+.shelf-unit.zoomed{
+  cursor:default;
+  transform:scale(1.35);
+  z-index:20;
+  box-shadow:0 32px 74px rgba(0,0,0,.7), 0 0 54px rgba(232,201,135,.28);
+}
+.shelf-unit-head{
+  display:flex;align-items:center;justify-content:center;gap:6px;margin-bottom:14px;position:relative;z-index:2;
+}
+.shelf-unit-label{
+  font-family:'Shippori Mincho',serif;font-size:.82rem;color:var(--gold-dust-soft);
+  letter-spacing:.1em;text-align:center;
+  background:transparent;border:none;outline:none;min-width:20px;
+  border-bottom:1px dashed transparent;padding:1px 2px;
+}
+.shelf-unit-label[contenteditable="true"]{
+  color:var(--gold-dust);border-bottom-color:var(--gold-dust);cursor:text;
+}
+.shelf-edit-btn{
+  width:20px;height:20px;border-radius:50%;border:1px solid rgba(232,201,135,.3);
+  background:rgba(0,0,0,.25);color:var(--gold-dust-soft);font-size:.65rem;
+  display:flex;align-items:center;justify-content:center;opacity:0;transition:opacity .2s ease;
+}
+.shelf-unit:hover .shelf-edit-btn{opacity:1;}
+.shelf-slots{
+  display:grid;grid-template-columns:repeat(3,1fr);gap:13px;position:relative;z-index:2;
+}
+.slot{
+  aspect-ratio:3/4;
+  border-radius:2px 2px 3px 3px;
+  position:relative;
+  display:flex;align-items:center;justify-content:center;
+  overflow:hidden;
+}
+.slot.empty{
+  border:1.5px dashed rgba(232,201,135,.32);
+  background:rgba(0,0,0,.22);
+  color:rgba(232,201,135,.5);
+  font-size:1.4rem;
+  transition:background .25s ease, border-color .25s ease, transform .2s ease;
+}
+.slot.empty:hover{background:rgba(232,201,135,.1);border-color:var(--gold-dust);transform:translateY(-2px);}
+.slot.empty:active{transform:scale(.96);}
+.shelf-plank{
+  height:10px;border-radius:1px;margin-top:12px;position:relative;z-index:2;
+  background:linear-gradient(to bottom, var(--brass) 0%, var(--wood-deep) 40%, var(--wood-deep) 100%);
+  box-shadow:0 4px 8px rgba(0,0,0,.5), inset 0 1px 0 rgba(255,224,170,.35);
+}
+
+/* book cover rendering — cloth/leather bound realism */
+.book-cover{
+  width:100%;height:100%;border-radius:2px 4px 4px 2px;
+  display:flex;align-items:flex-end;justify-content:center;
+  position:relative;cursor:pointer;
+  box-shadow:0 7px 15px rgba(0,0,0,.55), inset 3px 0 0 rgba(0,0,0,.3), inset -1px 0 0 rgba(255,255,255,.08);
+  transition:transform .25s ease, box-shadow .25s ease;
+  background-size:cover;background-position:center;
+}
+.book-cover::before{ /* page edge */
+  content:"";position:absolute;right:0;top:2px;bottom:2px;width:4px;
+  background:repeating-linear-gradient(to bottom, #ece3c8 0 2px, #d9cca0 2px 3px);
+  box-shadow:-1px 0 3px rgba(0,0,0,.4) inset;
+}
+.book-cover:hover{transform:translateY(-5px) scale(1.03);box-shadow:0 15px 28px rgba(0,0,0,.65);}
+.book-cover .cover-title{
+  width:100%;padding:8px 7px;text-align:center;
+  font-size:.85rem;line-height:1.25;
+  word-break:break-word;
+  text-shadow:0 1px 2px rgba(0,0,0,.6), 0 0 8px rgba(0,0,0,.3);
+}
+/* cover style presets */
+.cover-vintage-euro{background:radial-gradient(ellipse at 30% 15%, #8a5a35, #4a2c18 75%);}
+.cover-vintage-euro::after{content:"";position:absolute;inset:6px;border:1.5px solid #d9b872;border-radius:2px;pointer-events:none;opacity:.8;box-shadow:inset 0 0 0 3px rgba(74,44,24,.4);}
+.cover-vintage-japan{background:linear-gradient(160deg,#eee4c8,#c7b183 88%);}
+.cover-vintage-japan::after{content:"";position:absolute;inset:7px;border:1px solid #7a2e2e;border-radius:1px;pointer-events:none;opacity:.65;}
+.cover-vintage-japan .cover-title{color:#3a2418;text-shadow:none;}
+.cover-modern{background:linear-gradient(135deg,#3d4a6b,#1c2036 75%);}
+.cover-modern::after{content:"";position:absolute;left:12%;right:12%;top:40%;height:1.5px;background:rgba(255,255,255,.5);}
+.cover-heavy{background:radial-gradient(ellipse at 50% -10%, #4a1f2e, #180a10 78%);}
+.cover-heavy::after{content:"";position:absolute;inset:5px;border:2px solid #b5893f;border-radius:2px;box-shadow:inset 0 0 12px rgba(181,137,63,.45);pointer-events:none;}
+.cover-punk{background:#0d0d0d;position:relative;}
+.cover-punk::after{content:"";position:absolute;inset:0;background:
+  radial-gradient(circle at 20% 30%, #ff2fa0 0 8%, transparent 9%),
+  radial-gradient(circle at 75% 60%, #35ff9e 0 6%, transparent 7%),
+  radial-gradient(circle at 55% 15%, #ffe23d 0 5%, transparent 6%),
+  radial-gradient(circle at 30% 80%, #ff2fa0 0 5%, transparent 6%);
+  opacity:.85;mix-blend-mode:screen;}
+.cover-solid{}
+.cover-title.hidden-title{display:none;}
+
+/* ============ ADD/EDIT MODAL ============ */
+.overlay{
+  position:fixed;inset:0;z-index:90;
+  background:rgba(3,4,12,.74);
+  backdrop-filter:blur(4px);
+  display:flex;align-items:center;justify-content:center;
+  padding:20px;
+  opacity:0;pointer-events:none;
+  transition:opacity .3s ease;
+}
+.overlay.show{opacity:1;pointer-events:auto;}
+.panel{
+  background:linear-gradient(165deg,#171c40,#0e1128);
+  border:1px solid var(--panel-border);
+  border-radius:16px;
+  max-width:560px;width:100%;
+  max-height:88vh;overflow-y:auto;
+  padding:26px 26px 22px;
+  box-shadow:0 30px 80px rgba(0,0,0,.6), 0 0 40px rgba(93,63,143,.28);
+  position:relative;
+}
+.panel h2{
+  font-family:'Shippori Mincho',serif;color:var(--gold-dust);
+  margin:0 0 18px;font-size:1.3rem;letter-spacing:.05em;
+  display:flex;align-items:center;gap:10px;
+}
+.panel-close{
+  position:absolute;top:16px;right:16px;
+  width:34px;height:34px;border-radius:50%;
+  background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);
+  color:var(--ink);font-size:1.1rem;display:flex;align-items:center;justify-content:center;
+}
+.panel-close:hover{background:rgba(255,255,255,.14);}
+.field{margin-bottom:16px;}
+.field label{display:block;font-size:.82rem;color:var(--ink-dim);margin-bottom:6px;letter-spacing:.03em;}
+.field input[type=text],.field input[type=date],.field input[type=time],.field select,.field textarea{
+  width:100%;background:rgba(255,255,255,.05);border:1px solid rgba(232,201,135,.25);
+  border-radius:8px;padding:10px 12px;color:var(--ink);font-size:.95rem;font-family:inherit;
+}
+.field textarea{resize:vertical;min-height:70px;}
+.field input:focus,.field select:focus,.field textarea:focus{border-color:var(--gold-dust);}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
+.row3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;}
+.toggle-row{display:flex;align-items:center;justify-content:space-between;background:rgba(255,255,255,.04);padding:10px 14px;border-radius:8px;margin-bottom:16px;}
+.toggle-row label{font-size:.85rem;color:var(--ink);}
+.switch{position:relative;width:44px;height:24px;flex:none;}
+.switch input{opacity:0;width:0;height:0;}
+.slider{position:absolute;inset:0;background:rgba(255,255,255,.15);border-radius:20px;transition:.25s;cursor:pointer;}
+.slider::before{content:"";position:absolute;width:18px;height:18px;left:3px;top:3px;background:#fff;border-radius:50%;transition:.25s;}
+.switch input:checked + .slider{background:var(--gold-dust);}
+.switch input:checked + .slider::before{transform:translateX(20px);}
+
+.cover-tabs{display:flex;gap:8px;margin-bottom:14px;}
+.tab-btn{
+  flex:1;padding:8px 4px;border-radius:8px;border:1px solid rgba(232,201,135,.25);
+  background:rgba(255,255,255,.03);color:var(--ink-dim);font-size:.82rem;
+}
+.tab-btn.active{background:rgba(232,201,135,.18);color:var(--gold-dust);border-color:var(--gold-dust);}
+.cover-type-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:6px;}
+.cover-type-opt{
+  aspect-ratio:3/4;border-radius:4px;position:relative;border:2px solid transparent;
+  display:flex;align-items:flex-end;justify-content:center;overflow:hidden;
+}
+.cover-type-opt span{font-size:.68rem;padding:5px 3px;width:100%;text-align:center;background:rgba(0,0,0,.35);color:#fff;}
+.cover-type-opt.selected{border-color:var(--gold-dust);box-shadow:0 0 12px rgba(232,201,135,.5);}
+.color-swatch-row{display:flex;align-items:center;gap:10px;}
+.color-swatch-row input[type=color]{width:46px;height:36px;border:none;border-radius:8px;background:none;padding:0;}
+.upload-zone{
+  border:1.5px dashed rgba(232,201,135,.35);border-radius:10px;padding:18px;text-align:center;
+  color:var(--ink-dim);font-size:.85rem;cursor:pointer;position:relative;
+}
+.upload-zone img{max-height:120px;border-radius:6px;margin-top:8px;}
+.upload-zone input{position:absolute;inset:0;opacity:0;cursor:pointer;}
+
+
+.btn-row{display:flex;gap:10px;justify-content:flex-end;margin-top:18px;flex-wrap:wrap;}
+.btn{
+  padding:11px 22px;border-radius:22px;border:1px solid var(--panel-border);
+  background:rgba(255,255,255,.05);color:var(--ink);font-size:.9rem;font-weight:700;
+  transition:transform .15s ease, background .2s ease;
+}
+.btn:hover{transform:translateY(-1px);}
+.btn.primary{background:linear-gradient(135deg,var(--gold-dust),#c9a25c);color:#2a1a0a;border:none;}
+.btn.primary:hover{box-shadow:0 6px 20px rgba(232,201,135,.4);}
+.btn.danger{background:rgba(201,106,106,.15);border-color:var(--danger);color:#f0a9a9;}
+.btn.small{padding:7px 14px;font-size:.78rem;}
+
+/* ============ BOOK DETAIL ============ */
+.book-detail-overlay{align-items:flex-start;padding-top:min(5vh,50px);}
+.book-detail{
+  max-width:960px;width:100%;
+  background:radial-gradient(ellipse at 50% 0%, #1b1444, #0b0a20 75%);
+  border-radius:18px;border:1px solid var(--panel-border);
+  box-shadow:0 40px 90px rgba(0,0,0,.7), 0 0 60px rgba(93,63,143,.32);
+  padding:30px clamp(16px,4vw,40px) 34px;position:relative;
+  max-height:92vh;overflow-y:auto;
+}
+.book-detail-head{display:flex;gap:20px;align-items:center;margin-bottom:22px;flex-wrap:wrap;}
+.book-detail-cover{width:100px;height:136px;border-radius:4px;flex:none;box-shadow:0 10px 24px rgba(0,0,0,.5);}
+.book-detail-title{font-family:'Shippori Mincho',serif;font-size:1.5rem;color:var(--gold-dust);margin:0 0 6px;}
+.book-detail-sub{color:var(--ink-dim);font-size:.85rem;}
+.detail-columns{display:grid;grid-template-columns:1fr 1.15fr;gap:26px;}
+@media (max-width:760px){.detail-columns{grid-template-columns:1fr;}}
+
+/* ---- 図書カード (library due-date card) ---- */
+.pocket{
+  background:linear-gradient(160deg,#3a2e1a,#1e150c);
+  border-radius:10px;padding:16px;position:relative;
+  border:1px solid rgba(185,138,74,.35);
+}
+.pocket-label{font-size:.78rem;color:var(--gold-dust-soft);letter-spacing:.08em;margin-bottom:10px;font-family:'Shippori Mincho',serif;display:flex;align-items:center;justify-content:space-between;}
+.library-card{
+  background:#f4ecd8;color:#2a2013;border-radius:6px;padding:14px 14px 10px;
+  font-family:'Courier Prime',monospace;
+  box-shadow:0 10px 22px rgba(0,0,0,.4);
+}
+.lc-header{display:flex;justify-content:space-between;border-bottom:1px solid #8a7a4a;padding-bottom:8px;margin-bottom:8px;font-size:.72rem;color:#5a4a2a;letter-spacing:.05em;}
+.lc-entries{max-height:190px;overflow-y:auto;margin-bottom:8px;}
+.lc-entry{
+  display:grid;grid-template-columns:1fr auto auto auto;gap:6px;align-items:center;
+  font-size:.76rem;padding:5px 2px;border-bottom:1px dashed #b8ab84;
+}
+.lc-entry .lc-del{background:none;border:none;color:#a05a3a;font-size:.9rem;padding:0 2px;}
+.lc-empty-note{font-size:.75rem;color:#8a7a5a;text-align:center;padding:10px 0;}
+.lc-add-row{display:grid;grid-template-columns:1fr 1fr 1fr auto;gap:6px;margin-top:4px;}
+.lc-add-row input{font-family:'Courier Prime',monospace;font-size:.74rem;padding:5px 4px;border:1px solid #b8ab84;border-radius:4px;background:#fffaf0;color:#2a2013;}
+.lc-stamp-btn{
+  background:#5a3620;color:#f4ecd8;border:none;border-radius:4px;font-size:.85rem;
+  padding:0 8px;font-weight:700;
+}
+.lc-summary{font-size:.75rem;color:#5a4a2a;text-align:center;margin-top:6px;padding-top:8px;border-top:1px solid #b8ab84;}
+.heatmap{display:flex;gap:2px;flex-wrap:wrap;margin-top:10px;justify-content:center;}
+.heat-day{width:9px;height:9px;border-radius:2px;background:rgba(0,0,0,.35);}
+.heat-day.filled{background:var(--gold-dust);box-shadow:0 0 4px rgba(232,201,135,.7);}
+.tc-hint{font-size:.7rem;color:var(--ink-dim);margin-top:10px;text-align:center;}
+
+/* ---- flip-through review book ---- */
+.review-book-wrap{position:relative;}
+.review-book{
+  perspective:1600px;position:relative;min-height:380px;
+  background:linear-gradient(100deg,#efe6cc,#e6dab5);
+  border-radius:4px 10px 10px 4px;
+  box-shadow:0 14px 30px rgba(0,0,0,.5), inset -6px 0 12px rgba(0,0,0,.15);
+  padding:20px 22px;color:#2a2013;
+  overflow:hidden;
+}
+.review-book::before{ /* spine shadow / gutter */
+  content:"";position:absolute;left:0;top:0;bottom:0;width:14px;
+  background:linear-gradient(to right, rgba(0,0,0,.35), transparent);
+  pointer-events:none;z-index:5;
+}
+.review-page{
+  transform-origin:left center;
+  transition:transform .28s ease, opacity .28s ease;
+}
+.review-page-title{font-family:'Shippori Mincho',serif;font-size:.95rem;color:#5a3620;margin:0 0 14px;letter-spacing:.06em;border-bottom:1px dashed #b8ab84;padding-bottom:8px;}
+.rb-field{margin-bottom:12px;}
+.rb-field label{display:block;font-size:.75rem;color:#7a6a4a;margin-bottom:4px;}
+.rb-field input[type=text],.rb-field input[type=date]{
+  width:100%;background:rgba(255,255,255,.5);border:none;border-bottom:1.5px solid #8a7a4a;
+  padding:6px 2px;font-family:'Zen Maru Gothic',sans-serif;font-size:.92rem;color:#2a2013;
+}
+.rb-field input:focus{outline:none;border-color:#5a3620;}
+.rb-field textarea{
+  width:100%;min-height:200px;background:rgba(255,255,255,.4);border:1px solid #cbb98a;border-radius:4px;
+  padding:10px;font-family:'Zen Maru Gothic',sans-serif;font-size:.9rem;color:#2a2013;line-height:1.8;
+  background-image:repeating-linear-gradient(transparent,transparent 27px, #cbb98a55 28px);
+}
+.stars{display:flex;gap:6px;margin-bottom:6px;}
+.star-btn{background:none;border:none;color:rgba(0,0,0,.18);padding:0;line-height:1;font-size:1.5rem;transition:transform .15s ease,color .15s ease;}
+.star-btn.filled{color:#b98a2e;text-shadow:0 0 8px rgba(185,138,46,.5);}
+.star-btn:hover{transform:scale(1.15);}
+
+.page-nav{
+  position:absolute;top:50%;transform:translateY(-50%);
+  width:34px;height:56px;border-radius:6px;border:1px solid rgba(232,201,135,.3);
+  background:rgba(20,15,40,.55);color:var(--gold-dust);font-size:1.2rem;
+  display:flex;align-items:center;justify-content:center;z-index:6;
+}
+.page-nav.prev{left:-4px;}
+.page-nav.next{right:-4px;}
+.page-nav:disabled{opacity:.25;cursor:default;}
+.page-dots{display:flex;gap:6px;justify-content:center;margin-top:10px;}
+.page-dot{width:7px;height:7px;border-radius:50%;background:rgba(232,201,135,.3);}
+.page-dot.active{background:var(--gold-dust);}
+
+.detail-actions{display:flex;justify-content:space-between;margin-top:22px;flex-wrap:wrap;gap:10px;}
+
+/* ============ SOUNDBOARD PLACEHOLDER ============ */
+.soundboard-panel .panel{max-width:420px;text-align:center;}
+.soundboard-icon{font-size:2.4rem;margin-bottom:10px;}
+.soundboard-note{color:var(--ink-dim);font-size:.85rem;line-height:1.7;}
+
+/* toast */
+.toast{
+  position:fixed;bottom:26px;left:50%;transform:translateX(-50%) translateY(20px);
+  background:rgba(20,25,60,.95);border:1px solid var(--gold-dust);color:var(--starlight);
+  padding:10px 22px;border-radius:24px;font-size:.85rem;z-index:120;
+  opacity:0;transition:opacity .3s ease, transform .3s ease;pointer-events:none;
+}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+
+/* ============ CURSOR SPARKLE TRAIL ============ */
+.cursor-sparkle-layer{position:fixed;inset:0;z-index:200;pointer-events:none;}
+.cursor-spark{
+  position:absolute;border-radius:50%;
+  background:radial-gradient(circle, #fff 0%, var(--gold-dust) 55%, transparent 75%);
+  transform:translate(-50%,-50%);
+  animation:sparkFade .85s ease-out forwards;
+}
+@keyframes sparkFade{
+  0%{opacity:.95;transform:translate(-50%,-50%) scale(1);}
+  100%{opacity:0;transform:translate(-50%,-60%) scale(.2);}
+}
+
+@media (prefers-reduced-motion:reduce){
+  .orrery,.star.tw,.dust,.star-sparkle{animation:none !important;}
+  .cursor-sparkle-layer{display:none;}
+}
+@media (max-width:520px){
+  .shelf-slots{grid-template-columns:repeat(3,1fr);gap:8px;}
+  .cover-type-grid{grid-template-columns:repeat(3,1fr);}
+  .lc-add-row{grid-template-columns:1fr 1fr;}
+}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="brand"><span class="glyph">✦</span>星屑の図書館</div>
+  <div class="topbar-actions">
+    <div class="reader-chip" id="readerChip" tabindex="0" role="button" aria-label="読者の名前を設定">読者：<b id="readerNameLabel">名もなき読み手</b></div>
+    <button class="icon-btn" id="soundBtn" aria-label="サウンドボードを開く" title="サウンドボード">🔈</button>
+  </div>
+</div>
+
+<div class="scene">
+  <div class="dome" id="dome">
+    <div class="milkyway"></div>
+    <div class="dome-ring r1"></div>
+    <div class="dome-ring r2"></div>
+    <div class="dome-ring r3"></div>
+    <svg class="dome-ribs" viewBox="0 0 100 100" preserveAspectRatio="none">
+      <g stroke="#e8c987" stroke-width="0.12" fill="none">
+        <path d="M50,2 C20,20 5,40 2,70"/>
+        <path d="M50,2 C35,22 26,45 24,72"/>
+        <path d="M50,2 L50,74"/>
+        <path d="M50,2 C65,22 74,45 76,72"/>
+        <path d="M50,2 C80,20 95,40 98,70"/>
+      </g>
+    </svg>
+    
+      <g fill="#f4d99a" opacity="0.85">
+        <circle cx="6" cy="18" r="0.5"/>
+        <circle cx="23" cy="12" r="0.55"/>
+        <circle cx="50" cy="4" r="0.6"/>
+        <circle cx="77" cy="12" r="0.55"/>
+        <circle cx="94" cy="18" r="0.5"/>
+      </g>
+    </svg>
+    <div class="dome-title-wrap">
+      <p class="dome-title">星屑の図書館</p>
+      <p class="dome-tagline">✦ あなたの知識と物語が、星になって集まる場所 ✦</p>
+    </div>
+    <div class="light-beam"></div>
+    <div id="starLayer"></div>
+    <div id="sparkleLayer"></div>
+    <div id="dustLayer"></div>
+    <div id="planetLayer"></div>
+    <div class="orrery-wrap">
+      <svg class="orrery" viewBox="0 0 200 200">
+        <defs>
+          <radialGradient id="coreGlow" cx="50%" cy="50%" r="50%">
+            <stop offset="0%" stop-color="#fff8e6"/>
+            <stop offset="45%" stop-color="#e8c987"/>
+            <stop offset="100%" stop-color="#5d3f8f" stop-opacity="0"/>
+          </radialGradient>
+        </defs>
+        <circle class="ring" cx="100" cy="100" r="90" stroke-width="1.2"/>
+        <ellipse class="ring2" cx="100" cy="100" rx="90" ry="30" stroke-width="1"/>
+        <ellipse class="ring2" cx="100" cy="100" rx="30" ry="90" stroke-width="1"/>
+        <ellipse class="ring" cx="100" cy="100" rx="90" ry="34" transform="rotate(60 100 100)" stroke-width="1"/>
+        <ellipse class="ring" cx="100" cy="100" rx="90" ry="34" transform="rotate(120 100 100)" stroke-width="1"/>
+        <circle class="core" cx="100" cy="100" r="15"/>
+        <circle cx="184" cy="100" r="3.2" fill="#f4ecd8"/>
+        <circle cx="100" cy="16" r="2.4" fill="#cfe0ff"/>
+      </svg>
+    </div>
+    <div class="dome-hint">本棚をクリックして近づいてみよう ✦ 空いている場所から本を追加できます</div>
+  </div>
+
+  <div class="floor" id="floorSection">
+    <div class="floor-boards"></div>
+    <p class="shelf-room-title">— 蔵書の間 —</p>
+    <div class="shelf-grid" id="shelfGrid"></div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+<div class="cursor-sparkle-layer" id="cursorSparkleLayer" aria-hidden="true"></div>
+
+<!-- ============ MODAL: reader name ============ -->
+<div class="overlay" id="readerOverlay">
+  <div class="panel">
+    <button class="panel-close" data-close="readerOverlay" aria-label="閉じる">✕</button>
+    <h2>👤 読者の名前</h2>
+    <div class="field">
+      <label for="readerNameInput">図書カードに記録される名前</label>
+      <input type="text" id="readerNameInput" maxlength="24" placeholder="例）ほしの ひかり">
+    </div>
+    <div class="btn-row">
+      <button class="btn primary" id="readerSaveBtn">保存する</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============ MODAL: add / edit book ============ -->
+<div class="overlay" id="bookFormOverlay">
+  <div class="panel">
+    <button class="panel-close" data-close="bookFormOverlay" aria-label="閉じる">✕</button>
+    <h2 id="bookFormTitle">📖 本を追加する</h2>
+
+    <div class="field">
+      <label for="titleInput">タイトル</label>
+      <input type="text" id="titleInput" maxlength="60" placeholder="例）銀河鉄道">
+    </div>
+
+    <div class="field">
+      <label for="fontSelect">表紙の文字フォント</label>
+      <select id="fontSelect">
+        <option value="Shippori Mincho">和風・上品（篠原明朝）</option>
+        <option value="EB Garamond">欧風ヴィンテージ（Garamond）</option>
+        <option value="Cinzel">重厚・古典（Cinzel）</option>
+        <option value="Cormorant Garamond">優雅（Cormorant）</option>
+        <option value="Dela Gothic One">パンク・インパクト（Dela Gothic）</option>
+        <option value="Reggae One">ポップ・パンク（Reggae One）</option>
+        <option value="Zen Maru Gothic">やさしいモダン（Zen丸ゴシック）</option>
+        <option value="Yuji Syuku">筆文字・和風（游字宿）</option>
+      </select>
+    </div>
+    <div class="cover-preview-row">
+      <div class="cover-live-preview" id="coverLivePreview"></div>
+      
+    </div>
+
+    <div class="toggle-row">
+      <label for="showTitleToggle">表紙にタイトルを表示する</label>
+      <label class="switch"><input type="checkbox" id="showTitleToggle" checked><span class="slider"></span></label>
+    </div>
+
+    <div class="field">
+      <label>表紙のデザイン</label>
+      <div class="cover-tabs">
+        <button class="tab-btn active" data-covertab="upload" type="button">画像をアップロード</button>
+        <button class="tab-btn" data-covertab="preset" type="button">表紙を選ぶ</button>
+      </div>
+
+      <div id="coverTabUpload">
+        <div class="upload-zone" id="uploadZone">
+          <div id="uploadZoneText">クリックして表紙画像を選択（任意）</div>
+          <img id="uploadPreview" style="display:none;">
+          <input type="file" id="coverFileInput" accept="image/*">
+        </div>
+      </div>
+
+      <div id="coverTabPreset" style="display:none;">
+        <div class="cover-type-grid" id="coverTypeGrid">
+          <div class="cover-type-opt cover-vintage-euro" data-covertype="vintage-euro"><span>ヴィンテージ（欧）</span></div>
+          <div class="cover-type-opt cover-vintage-japan" data-covertype="vintage-japan"><span>ヴィンテージ（和）</span></div>
+          <div class="cover-type-opt cover-modern" data-covertype="modern"><span>モダン</span></div>
+          <div class="cover-type-opt cover-heavy" data-covertype="heavy"><span>重厚</span></div>
+          <div class="cover-type-opt cover-punk" data-covertype="punk"><span>パンク</span></div>
+          <div class="cover-type-opt cover-solid" id="soldOpt" data-covertype="solid"><span>単色</span></div>
+        </div>
+        <div class="color-swatch-row" id="colorRow" style="display:none;">
+          <label for="coverColorInput" style="font-size:.82rem;color:var(--ink-dim);">色を選ぶ：</label>
+          <input type="color" id="coverColorInput" value="#3a4a7a">
+        </div>
+      </div>
+    </div>
+
+    <div class="btn-row">
+      <button class="btn danger" id="deleteBookBtn" style="display:none;">この本を消す</button>
+      <button class="btn" data-close="bookFormOverlay">キャンセル</button>
+      <button class="btn primary" id="saveBookBtn">本棚に置く</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============ MODAL: book detail ============ -->
+<div class="overlay book-detail-overlay" id="bookDetailOverlay">
+  <div class="book-detail">
+    <button class="panel-close" data-close="bookDetailOverlay" aria-label="閉じる">✕</button>
+    <div class="book-detail-head">
+      <div class="book-detail-cover" id="detailCoverImg"></div>
+      <div>
+        <p class="book-detail-title" id="detailTitle">タイトル</p>
+        <p class="book-detail-sub" id="detailSub">読書の記録</p>
+      </div>
+    </div>
+
+    <div class="detail-columns">
+      <div class="pocket">
+        <div class="pocket-label"><span>🗂 図書カード</span><span style="font-weight:400;font-size:.68rem;">読むたびに記録を追加できます</span></div>
+        <div class="library-card">
+          <div class="lc-header"><span>TITLE</span><span id="lcTitleTag">—</span></div>
+          <div class="lc-entries" id="lcEntries"></div>
+          <div class="lc-add-row">
+            <input type="date" id="lcDate">
+            <input type="time" id="lcStart" placeholder="開始">
+            <input type="time" id="lcEnd" placeholder="終了">
+            <button class="lc-stamp-btn" id="lcAddBtn" title="記録を追加">＋</button>
+          </div>
+          <div class="lc-summary" id="lcSummary"></div>
+          <div class="heatmap" id="lcHeatmap"></div>
+        </div>
+        <p class="tc-hint">日付と時刻を記録すると、読んだ日々が下の一覧に可視化されるよ</p>
+      </div>
+
+      <div class="review-book-wrap">
+        <div class="review-book" id="reviewBook">
+          <div class="review-page" id="reviewPage"></div>
+        </div>
+        <button class="page-nav prev" id="pagePrev" aria-label="前のページ">‹</button>
+        <button class="page-nav next" id="pageNext" aria-label="次のページ">›</button>
+        <div class="page-dots">
+          <span class="page-dot active" data-dot="0"></span>
+          <span class="page-dot" data-dot="1"></span>
+        </div>
+      </div>
+    </div>
+
+    <div class="detail-actions">
+      <button class="btn" id="editCoverFromDetail">表紙を編集する</button>
+      <button class="btn primary" id="saveReviewBtn">感想を保存する</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============ MODAL: soundboard placeholder ============ -->
+<div class="overlay soundboard-panel" id="soundOverlay">
+  <div class="panel">
+    <button class="panel-close" data-close="soundOverlay" aria-label="閉じる">✕</button>
+    <div class="soundboard-icon">🎵</div>
+    <h2 style="justify-content:center;">サウンドボード</h2>
+    <p class="soundboard-note">
+      ここには近日、図書館の音（環境音・BGM・効果音）を追加できるサウンドボードが入ります。<br><br>
+      現在はプレースホルダー。
+    </p>
+  </div>
+</div>
+
+<script>
+(function(){
+"use strict";
+
+/* =========================================================
+   SOUNDBOARD PLACEHOLDER
+   ---------------------------------------------------------
+   Stub so a soundboard (ambient loops / SFX / click sounds)
+   can be dropped in later without restructuring the app.
+   To add real sounds:
+     1. Add <audio> elements or a Web Audio setup here.
+     2. Populate SOUND_LIBRARY below with {id, label, src}.
+     3. Render buttons for each into #soundOverlay .panel
+        (replace the placeholder note).
+   ========================================================= */
+   //#endregion
+const SOUND_LIBRARY = []; // e.g. [{id:'rain', label:'雨音', src:'rain.mp3'}]
+
+/* ---------------- constants ---------------- */
+const SHELF_COUNT = 6;
+const SLOTS_PER_SHELF = 6;
+const STORAGE_KEY = 'star-library-data';
+
+/* ---------------- state ---------------- */
+let state = {
+  readerName: '',
+  shelfNames: {},   // shelfIdx -> custom label
+  books: {}         // slotId -> book object
+};
+let activeSlotId = null;
+let activeCoverTab = 'upload';
+let activeCoverType = 'vintage-euro';
+let uploadedImageData = null;
+
+/* ---------------- persistence ---------------- */
+async function loadState(){
+  try{
+    const res = await window.storage.get(STORAGE_KEY, false);
+    if(res && res.value){
+      const parsed = JSON.parse(res.value);
+      state.readerName = parsed.readerName || '';
+      state.shelfNames = parsed.shelfNames || {};
+      state.books = parsed.books || {};
+      // migrate legacy single timecard fields -> readingLog array
+      Object.values(state.books).forEach(b=>{
+        if(!Array.isArray(b.readingLog)) b.readingLog = [];
+        if(b.timecardDate && b.readingLog.length===0){
+          b.readingLog.push({id:'m'+Date.now(), date:b.timecardDate, start:'', end:''});
+        }
+      });
+    }
+  }catch(e){ /* no data yet — fine, start fresh */ }
+  renderReaderName();
+  renderShelves();
+}
+async function saveState(){
+  try{
+    await window.storage.set(STORAGE_KEY, JSON.stringify(state), false);
+  }catch(e){ console.error('保存に失敗しました', e); }
+}
+
+/* ---------------- utils ---------------- */
+function $(sel,root){return (root||document).querySelector(sel);}
+function $all(sel,root){return Array.from((root||document).querySelectorAll(sel));}
+function openOverlay(id){$('#'+id).classList.add('show');}
+function closeOverlay(id){$('#'+id).classList.remove('show');}
+function showToast(msg){
+  const t = $('#toast'); t.textContent = msg; t.classList.add('show');
+  clearTimeout(showToast._t);
+  showToast._t = setTimeout(()=>t.classList.remove('show'), 2200);
+}
+function escapeHtml(s){
+  return (s||'').replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+function fmtDate(d){
+  if(!d) return '';
+  const parts = d.split('-');
+  if(parts.length!==3) return d;
+  return `${parts[0]}/${parts[1]}/${parts[2]}`;
+}
+function fmtTime(t){ return t || '--:--'; }
+
+/* ---------------- dome: stars / planets / dust / sparkles ---------------- */
+function buildDome(){
+  const starLayer = $('#starLayer');
+  let starsHtml = '';
+  for(let i=0;i<170;i++){
+    const size = (Math.random()*1.9+0.6).toFixed(2);
+    const top = (Math.random()*74).toFixed(2);
+    const left = (Math.random()*100).toFixed(2);
+    const dur = (Math.random()*3+2.5).toFixed(2);
+    const delay = (Math.random()*4).toFixed(2);
+    const minOp = (Math.random()*.3+.15).toFixed(2);
+    const tint = Math.random()<.18 ? (Math.random()<.5?'#cfe0ff':'#ffe9c9') : '#ffffff';
+    starsHtml += `<div class="star tw" style="width:${size}px;height:${size}px;top:${top}%;left:${left}%;--dur:${dur}s;--delay:${delay}s;--min-op:${minOp};background:${tint};"></div>`;
+  }
+  starLayer.innerHTML = starsHtml;
+
+  const sparkleLayer = $('#sparkleLayer');
+  const sparkleSvg = `<svg viewBox="0 0 24 24"><path d="M12 0 L14 10 L24 12 L14 14 L12 24 L10 14 L0 12 L10 10 Z" fill="#fff"/></svg>`;
+  let sparkleHtml='';
+  const sparklePos = [[10,8,14],[88,14,10],[24,28,9],[76,34,12],[54,6,8],[6,46,10],[92,50,9]];
+  sparklePos.forEach((p,i)=>{
+    sparkleHtml += `<div class="star-sparkle" style="left:${p[0]}%;top:${p[1]}%;width:${p[2]}px;height:${p[2]}px;--dur:${(3+Math.random()*2).toFixed(2)}s;--delay:${(Math.random()*3).toFixed(2)}s;">${sparkleSvg}</div>`;
+  });
+  sparkleLayer.innerHTML = sparkleHtml;
+
+  const planetLayer = $('#planetLayer');
+  const palettes = ['#8fa8ff','#e8c987','#d98b8b','#9fd8c9','#c9a8e8'];
+  let planetsHtml = '';
+  const positions = [[8,10,26,false],[85,6,22,true],[15,32,16,false],[90,30,30,false],[50,4,14,false],[70,22,18,false]];
+  positions.forEach((p,i)=>{
+    planetsHtml += `<div class="planet${p[3]?' ringed':''}" style="left:${p[0]}%;top:${p[1]}%;width:${p[2]}px;height:${p[2]}px;background:radial-gradient(circle at 35% 30%, #fff8, transparent 40%), ${palettes[i%palettes.length]};"></div>`;
+  });
+  planetLayer.innerHTML = planetsHtml;
+
+  const dustLayer = $('#dustLayer');
+  let dustHtml = '';
+  for(let i=0;i<26;i++){
+    const size=(Math.random()*2.4+1).toFixed(2);
+    const left=(40+Math.random()*20).toFixed(2);
+    const dur=(Math.random()*5+5).toFixed(2);
+    const delay=(Math.random()*6).toFixed(2);
+    const drift=(Math.random()*40-20).toFixed(1);
+    dustHtml += `<div class="dust" style="width:${size}px;height:${size}px;left:${left}%;top:12%;--drift:${drift}px;animation-duration:${dur}s;animation-delay:${delay}s;"></div>`;
+  }
+  dustLayer.innerHTML = dustHtml;
+}
+
+/* ---------------- shelves ---------------- */
+function slotId(shelfIdx, slotIdx){ return `s${shelfIdx}-${slotIdx}`; }
+function shelfLabel(idx){ return state.shelfNames[idx] || `第${idx+1}棚`; }
+
+function renderShelves(){
+  const grid = $('#shelfGrid');
+  let html = '';
+  for(let sh=0; sh<SHELF_COUNT; sh++){
+    html += `<div class="shelf-unit" data-shelf="${sh}">
+      <div class="shelf-unit-head">
+        <span class="shelf-unit-label" data-shelf-label="${sh}">${escapeHtml(shelfLabel(sh))}</span>
+        <button class="shelf-edit-btn" data-shelf-edit="${sh}" aria-label="棚の名前を編集" title="棚の名前を編集">✎</button>
+      </div>
+      <div class="shelf-slots">`;
+    for(let sl=0; sl<SLOTS_PER_SHELF; sl++){
+      const id = slotId(sh,sl);
+      const book = state.books[id];
+      if(book){
+        html += `<div class="slot" data-slot="${id}">${renderBookCover(book)}</div>`;
+      }else{
+        html += `<div class="slot empty" data-slot="${id}" role="button" tabindex="0" aria-label="ここに本を追加する">＋</div>`;
+      }
+    }
+    html += `</div><div class="shelf-plank"></div></div>`;
+  }
+  grid.innerHTML = html;
+  attachShelfEvents();
+}
+
+function renderBookCover(book){
+  const coverClass = book.coverImage ? '' : ('cover-' + (book.coverType || 'modern'));
+  const bg = book.coverImage ? `style="background-image:url(${book.coverImage});"` :
+    (book.coverType==='solid' ? `style="background:${book.coverColor||'#3a4a7a'};"` : '');
+  const titleClass = book.showTitleOnCover===false ? 'cover-title hidden-title' : 'cover-title';
+  const font = book.font || 'Zen Maru Gothic';
+  const textColor = (book.coverType==='vintage-japan' && !book.coverImage) ? '#3a2418' : '#f4ecd8';
+  return `<div class="book-cover ${coverClass}" ${bg} data-book-slot="${book.id}">
+      <div class="${titleClass}" style="font-family:'${font}',serif;color:${textColor};">${escapeHtml(book.title)}</div>
+    </div>`;
+}
+
+function attachShelfEvents(){
+  $all('.shelf-unit').forEach(unit=>{
+    unit.addEventListener('click', ()=>{
+      if(unit.classList.contains('zoomed')) return;
+      zoomShelf(unit);
+    });
+  });
+  $all('[data-shelf-edit]').forEach(btn=>{
+    btn.addEventListener('click', (e)=>{
+      e.stopPropagation();
+      const idx = btn.dataset.shelfEdit;
+      const labelEl = $(`[data-shelf-label="${idx}"]`);
+      labelEl.setAttribute('contenteditable','true');
+      labelEl.focus();
+      document.execCommand && document.execCommand('selectAll', false, null);
+    });
+  });
+  $all('.shelf-unit-label').forEach(label=>{
+    label.addEventListener('click', (e)=>{ if(label.getAttribute('contenteditable')==='true') e.stopPropagation(); });
+    label.addEventListener('keydown', (e)=>{
+      if(e.key==='Enter'){ e.preventDefault(); label.blur(); }
+    });
+    label.addEventListener('blur', async ()=>{
+      const idx = label.dataset.shelfLabel;
+      let val = label.textContent.trim();
+      if(!val) val = `第${parseInt(idx,10)+1}棚`;
+      state.shelfNames[idx] = val;
+      label.textContent = val;
+      label.setAttribute('contenteditable','false');
+      await saveState();
+    });
+  });
+  $all('.slot').forEach(slot=>{
+    slot.addEventListener('click', (e)=>{
+      e.stopPropagation();
+      const parentUnit = slot.closest('.shelf-unit');
+      if(!parentUnit.classList.contains('zoomed')){
+        zoomShelf(parentUnit);
+        return;
+      }
+      const id = slot.dataset.slot;
+      if(state.books[id]){
+        openBookDetail(id);
+      }else{
+        openBookForm(id);
+      }
+    });
+    slot.addEventListener('keydown', (e)=>{
+      if(e.key==='Enter' || e.key===' '){ e.preventDefault(); slot.click(); }
+    });
+  });
+}
+
+function zoomShelf(unit){
+  const grid = $('#shelfGrid');
+  const already = unit.classList.contains('zoomed');
+  $all('.shelf-unit').forEach(u=>u.classList.remove('zoomed'));
+  grid.classList.remove('has-zoom');
+  if(!already){
+    unit.classList.add('zoomed');
+    grid.classList.add('has-zoom');
+    unit.scrollIntoView({behavior:'smooth', block:'center'});
+  }
+}
+
+document.addEventListener('click', (e)=>{
+  const grid = document.getElementById('shelfGrid');
+  if(!grid || !grid.classList.contains('has-zoom')) return;
+  if(e.target.closest('.shelf-unit')) return;
+  if(e.target.closest('.overlay')) return;
+  if(e.target.closest('.topbar')) return;
+  $all('.shelf-unit').forEach(u=>u.classList.remove('zoomed'));
+  grid.classList.remove('has-zoom');
+});
+
+/* ---------------- reader name ---------------- */
+function renderReaderName(){
+  $('#readerNameLabel').textContent = state.readerName || '名もなき読み手';
+}
+$('#readerChip').addEventListener('click', ()=>{
+  $('#readerNameInput').value = state.readerName || '';
+  openOverlay('readerOverlay');
+  $('#readerNameInput').focus();
+});
+$('#readerChip').addEventListener('keydown', (e)=>{ if(e.key==='Enter') $('#readerChip').click(); });
+$('#readerSaveBtn').addEventListener('click', async ()=>{
+  state.readerName = $('#readerNameInput').value.trim();
+  renderReaderName();
+  await saveState();
+  closeOverlay('readerOverlay');
+  showToast('読者の名前を保存したよ');
+});
+
+/* ---------------- book form (add / edit cover) ---------------- */
+function openBookForm(id){
+  activeSlotId = id;
+  const existing = state.books[id];
+  $('#bookFormTitle').textContent = existing ? '📖 表紙を編集する' : '📖 本を追加する';
+  $('#deleteBookBtn').style.display = existing ? 'inline-block' : 'none';
+
+  $('#titleInput').value = existing ? existing.title : '';
+  $('#fontSelect').value = existing ? (existing.font||'Zen Maru Gothic') : 'Zen Maru Gothic';
+  $('#showTitleToggle').checked = existing ? existing.showTitleOnCover!==false : true;
+
+  uploadedImageData = existing && existing.coverImage ? existing.coverImage : null;
+  activeCoverType = existing && existing.coverType ? existing.coverType : 'vintage-euro';
+  activeCoverTab = uploadedImageData ? 'upload' : (existing ? 'preset' : 'upload');
+
+  setCoverTab(activeCoverTab);
+  updateUploadPreview();
+  updateCoverTypeSelection();
+  $('#coverColorInput').value = (existing && existing.coverColor) || '#3a4a7a';
+  updateCoverPreview();
+  openOverlay('bookFormOverlay');
+  $('#titleInput').focus();
+}
+
+function updateCoverPreview(){
+  const draftBook = {
+    id:'preview',
+    title: $('#titleInput').value || 'タイトルのプレビュー',
+    font: $('#fontSelect').value,
+    showTitleOnCover: $('#showTitleToggle').checked,
+    coverImage: (activeCoverTab==='upload' && uploadedImageData) ? uploadedImageData : null,
+    coverType: (activeCoverTab==='preset') ? activeCoverType : (uploadedImageData ? null : 'modern'),
+    coverColor: (activeCoverTab==='preset' && activeCoverType==='solid') ? $('#coverColorInput').value : '#3a4a7a'
+  };
+  //#endregion showTitleOnCoverからここまででプレビューは無くなるけど、
+  //#endregion 他にも消す必要がある
+  //#endregion あとでそこを編集
+  const el = $('#coverLivePreview .book-cover');
+  if(el) el.style.pointerEvents = 'none';
+}
+$('#titleInput').addEventListener('input', updateCoverPreview);
+$('#fontSelect').addEventListener('change', updateCoverPreview);
+
+function setCoverTab(tab){
+  activeCoverTab = tab;
+  $all('.tab-btn').forEach(b=>b.classList.toggle('active', b.dataset.covertab===tab));
+  $('#coverTabUpload').style.display = tab==='upload' ? 'block':'none';
+  $('#coverTabPreset').style.display = tab==='preset' ? 'block':'none';
+  updateCoverPreview();
+}
+$all('.tab-btn').forEach(b=>b.addEventListener('click', ()=>setCoverTab(b.dataset.covertab)));
+
+$('#coverFileInput').addEventListener('change', (e)=>{
+  const file = e.target.files[0];
+  if(!file) return;
+  const reader = new FileReader();
+  reader.onload = (ev)=>{
+    uploadedImageData = ev.target.result;
+    updateUploadPreview();
+    updateCoverPreview();
+  };
+  reader.readAsDataURL(file);
+});
+function updateUploadPreview(){
+  const img = $('#uploadPreview');
+  const txt = $('#uploadZoneText');
+  if(uploadedImageData){
+    img.src = uploadedImageData; img.style.display='block';
+    txt.textContent = 'クリックして画像を変更';
+  }else{
+    img.style.display='none';
+    txt.textContent = 'クリックして表紙画像を選択（任意）';
+  }
+}
+
+$all('.cover-type-opt').forEach(opt=>{
+  opt.addEventListener('click', ()=>{
+    activeCoverType = opt.dataset.covertype;
+    updateCoverTypeSelection();
+    updateCoverPreview();
+  });
+});
+function updateCoverTypeSelection(){
+  $all('.cover-type-opt').forEach(o=>o.classList.toggle('selected', o.dataset.covertype===activeCoverType));
+  $('#colorRow').style.display = activeCoverType==='solid' ? 'flex':'none';
+  $('#soldOpt').style.background = $('#coverColorInput').value;
+}
+$('#coverColorInput').addEventListener('input', ()=>{
+  $('#soldOpt').style.background = $('#coverColorInput').value;
+  updateCoverPreview();
+});
+
+$('#saveBookBtn').addEventListener('click', async ()=>{
+  const title = $('#titleInput').value.trim();
+  if(!title){ showToast('タイトルを入れてね'); $('#titleInput').focus(); return; }
+
+  const existing = state.books[activeSlotId];
+  const book = existing ? {...existing} : {
+    id: activeSlotId, author:'', rating:0, dateRead:'',
+    impression:'', readingLog:[]
+  };
+  book.title = title;
+  book.font = $('#fontSelect').value;
+  book.showTitleOnCover = $('#showTitleToggle').checked;
+
+  if(activeCoverTab==='upload' && uploadedImageData){
+    book.coverImage = uploadedImageData;
+    book.coverType = null;
+    book.coverColor = null;
+  }else if(activeCoverTab==='preset'){
+    book.coverImage = null;
+    book.coverType = activeCoverType;
+    book.coverColor = activeCoverType==='solid' ? $('#coverColorInput').value : null;
+  }else{
+    book.coverImage = null;
+    book.coverType = book.coverType || 'modern';
+  }
+
+  state.books[activeSlotId] = book;
+  await saveState();
+  renderShelves();
+  closeOverlay('bookFormOverlay');
+  showToast('本棚に置いたよ ✦');
+});
+
+$('#deleteBookBtn').addEventListener('click', async ()=>{
+  if(!activeSlotId) return;
+  delete state.books[activeSlotId];
+  await saveState();
+  renderShelves();
+  closeOverlay('bookFormOverlay');
+  showToast('本を棚から下げたよ');
+});
+
+/* ---------------- book detail: library card (readingLog) ---------------- */
+let detailSlotId = null;
+
+function openBookDetail(id){
+  detailSlotId = id;
+  const book = state.books[id];
+  if(!book) return;
+
+  $('#detailTitle').textContent = book.title;
+  $('#detailSub').textContent = book.author ? `作者：${book.author}` : '読書の記録';
+  const coverEl = $('#detailCoverImg');
+  coverEl.innerHTML = renderBookCover(book);
+  coverEl.querySelector('.book-cover').style.pointerEvents='none';
+  $('#lcTitleTag').textContent = book.title;
+
+  renderLibraryCard(book);
+
+  reviewData = {
+    rating: book.rating || 0,
+    title: book.title || '',
+    author: book.author || '',
+    date: book.dateRead || '',
+    impression: book.impression || ''
+  };
+  currentPageIndex = 0;
+  renderReviewPage();
+  updatePageNav();
+
+  openOverlay('bookDetailOverlay');
+}
+
+function renderLibraryCard(book){
+  const entriesEl = $('#lcEntries');
+  const log = (book.readingLog||[]).slice().sort((a,b)=> (a.date||'').localeCompare(b.date||''));
+  if(log.length===0){
+    entriesEl.innerHTML = `<div class="lc-empty-note">まだ記録がありません。読んだ日を書き込んでみよう。</div>`;
+  }else{
+    entriesEl.innerHTML = log.map(e=>`
+      <div class="lc-entry" data-entry="${e.id}">
+        <span>${fmtDate(e.date)}</span>
+        <span>${fmtTime(e.start)}</span>
+        <span>〜 ${fmtTime(e.end)}</span>
+        <button class="lc-del" data-del-entry="${e.id}" aria-label="この記録を削除">×</button>
+      </div>`).join('');
+  }
+  $all('[data-del-entry]', entriesEl).forEach(btn=>{
+    btn.addEventListener('click', async ()=>{
+      const b = state.books[detailSlotId];
+      b.readingLog = (b.readingLog||[]).filter(x=>x.id!==btn.dataset.delEntry);
+      await saveState();
+      renderLibraryCard(b);
+    });
+  });
+
+  // summary + heatmap
+  const summaryEl = $('#lcSummary');
+  if(log.length===0){
+    summaryEl.textContent = '';
+  }else{
+    const first = log[0].date, last = log[log.length-1].date;
+    const span = first===last ? fmtDate(first) : `${fmtDate(first)} 〜 ${fmtDate(last)}`;
+    summaryEl.textContent = `読書期間：${span}（記録 ${log.length} 件）`;
+  }
+  const heat = $('#lcHeatmap');
+  const readDates = new Set(log.map(e=>e.date));
+  let heatHtml = '';
+  const today = new Date();
+  for(let i=29;i>=0;i--){
+    const d = new Date(today); d.setDate(today.getDate()-i);
+    const key = d.toISOString().slice(0,10);
+    heatHtml += `<div class="heat-day${readDates.has(key)?' filled':''}" title="${key}"></div>`;
+  }
+  heat.innerHTML = heatHtml;
+}
+
+$('#lcAddBtn').addEventListener('click', async ()=>{
+  const book = state.books[detailSlotId];
+  if(!book) return;
+  const date = $('#lcDate').value;
+  const start = $('#lcStart').value;
+  const end = $('#lcEnd').value;
+  if(!date){ showToast('日付を選んでね'); return; }
+  book.readingLog = book.readingLog || [];
+  book.readingLog.push({id:'e'+Date.now()+Math.random().toString(16).slice(2), date, start, end});
+  await saveState();
+  renderLibraryCard(book);
+  renderShelves();
+  $('#lcStart').value=''; $('#lcEnd').value='';
+  showToast('図書カードにスタンプを押したよ');
+});
+
+/* ---------------- review: flip-through pages ---------------- */
+let reviewData = {rating:0,title:'',author:'',date:'',impression:''};
+let currentPageIndex = 0;
+
+function collectCurrentPageInputs(){
+  if(currentPageIndex===0){
+    const t = $('#revTitle'); const a = $('#revAuthor'); const d = $('#revDate');
+    if(t) reviewData.title = t.value.trim();
+    if(a) reviewData.author = a.value.trim();
+    if(d) reviewData.date = d.value;
+  }else{
+    const imp = $('#revImpression');
+    if(imp) reviewData.impression = imp.value;
+  }
+}
+
+function pageHtml(idx){
+  if(idx===0){
+    const stars = [1,2,3,4,5].map(n=>`<button class="star-btn${n<=reviewData.rating?' filled':''}" data-star="${n}" type="button">★</button>`).join('');
+    return `
+      <p class="review-page-title">① 評価とだいたいの情報</p>
+      <div class="rb-field"><label>評価</label><div class="stars" id="starRow">${stars}</div></div>
+      <div class="rb-field"><label for="revTitle">タイトル</label><input type="text" id="revTitle" maxlength="60" value="${escapeHtml(reviewData.title)}"></div>
+      <div class="rb-field"><label for="revAuthor">作者</label><input type="text" id="revAuthor" maxlength="40" placeholder="例）宮沢 賢治" value="${escapeHtml(reviewData.author)}"></div>
+      <div class="rb-field"><label for="revDate">読んだ日にち</label><input type="date" id="revDate" value="${reviewData.date}"></div>
+    `;
+    }
+  if (idx===1){
+    return `
+        <p class="review-page-title">② 本の紹介</p>
+        <div class="rb-field"><label for="revImpression">読むきっかけはなんだったかな</label>
+        <textarea id="revImpression" maxlength="1200" placeholder=" タイトル、作者名、選んだ理由や簡単なあらすじ …">${escapeHtml(reviewData.impression)}</textarea>
+        </div>
+    `;
+    }
+  if(idx===2){
+    return  `
+        <p class="review-page-title">③ 感想文</p>
+        <div class="rb-field"><label for="revImpression">心に残ったことを書いてみよう</label>
+        <textarea id="revImpression" maxlength="1200" placeholder="どんな展開が印象に残った？ 主人公はどう変わった？ …">${escapeHtml(reviewData.impression)}</textarea>
+        </div>
+    `;
+    }
+  if(idx===3){
+    return  `
+        <p class="review-page-title">④ 感想文</p>
+        <div class="rb-field"><label for="revImpression">心に残ったことを書いてみよう</label>
+        <textarea id="revImpression" maxlength="1200" placeholder="自分ならどうしたと思う？ …">${escapeHtml(reviewData.impression)}</textarea>
+        </div>
+    `;
+    }
+return '';
+}
+function renderReviewPage(){
+  $('#reviewPage').innerHTML = pageHtml(currentPageIndex);
+  if(currentPageIndex===0){
+    $all('.star-btn').forEach(btn=>{
+      btn.addEventListener('click', ()=>{
+        const val = parseInt(btn.dataset.star,10);
+        reviewData.rating = (reviewData.rating===val) ? 0 : val;
+        renderReviewPage();
+      });
+    });
+  }
+  updatePageDots();
+}
+function updatePageDots(){
+  $all('.page-dot').forEach(d=> d.classList.toggle('active', parseInt(d.dataset.dot,10)===currentPageIndex));
+}
+function updatePageNav(){
+  $('#pagePrev').disabled = currentPageIndex===0;
+  $('#pageNext').disabled = currentPageIndex===3;
+
+
+}
+
+function flipTo(newIndex){
+  if(newIndex===currentPageIndex || newIndex<0 || newIndex>3) return;
+  collectCurrentPageInputs();
+  const pageEl = $('#reviewPage');
+  const dir = newIndex>currentPageIndex ? -1 : 1;
+  pageEl.style.transition = 'transform .26s ease, opacity .26s ease';
+  pageEl.style.transform = `rotateY(${dir*95}deg)`;
+  pageEl.style.opacity = '0';
+  setTimeout(()=>{
+    currentPageIndex = newIndex;
+    renderReviewPage();
+    updatePageNav();
+    pageEl.style.transition = 'none';
+    pageEl.style.transform = `rotateY(${-dir*95}deg)`;
+    pageEl.style.opacity = '0';
+    requestAnimationFrame(()=>{
+      requestAnimationFrame(()=>{
+        pageEl.style.transition = 'transform .26s ease, opacity .26s ease';
+        pageEl.style.transform = 'rotateY(0deg)';
+        pageEl.style.opacity = '1';
+      });
+    });
+  }, 260);
+}
+$('#pagePrev').addEventListener('click', ()=>flipTo(currentPageIndex-1));
+$('#pageNext').addEventListener('click', ()=>flipTo(currentPageIndex+1));
+$all('.page-dot').forEach(d=> d.addEventListener('click', ()=>flipTo(parseInt(d.dataset.dot,10))));
+
+$('#saveReviewBtn').addEventListener('click', async ()=>{
+  const book = state.books[detailSlotId];
+  if(!book) return;
+  collectCurrentPageInputs();
+  book.rating = reviewData.rating;
+  book.author = reviewData.author;
+  book.dateRead = reviewData.date;
+  book.impression = reviewData.impression;
+  if(reviewData.title) book.title = reviewData.title;
+
+  await saveState();
+  renderShelves();
+  closeOverlay('bookDetailOverlay');
+  showToast('感想を記録したよ ✦ すてきな一冊だね');
+});
+
+$('#editCoverFromDetail').addEventListener('click', ()=>{
+  closeOverlay('bookDetailOverlay');
+  openBookForm(detailSlotId);
+});
+
+/* ---------------- soundboard ---------------- */
+$('#soundBtn').addEventListener('click', ()=> openOverlay('soundOverlay'));
+
+/* ---------------- generic overlay close ---------------- */
+$all('[data-close]').forEach(btn=>{
+  btn.addEventListener('click', ()=> closeOverlay(btn.dataset.close));
+});
+$all('.overlay').forEach(ov=>{
+  ov.addEventListener('click', (e)=>{ if(e.target===ov) closeOverlay(ov.id); });
+});
+document.addEventListener('keydown', (e)=>{
+  if(e.key==='Escape'){
+    $all('.overlay.show').forEach(ov=>closeOverlay(ov.id));
+  }
+});
+
+/* ---------------- cursor sparkle trail ---------------- */
+function initCursorSparkles(){
+  const reduceMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  if(reduceMotion) return;
+  const layer = $('#cursorSparkleLayer');
+  let last = 0;
+  window.addEventListener('pointermove', (e)=>{
+    const now = performance.now();
+    if(now - last < 55) return; // throttle
+    last = now;
+    const spark = document.createElement('div');
+    const size = Math.random()*4+3;
+    spark.className = 'cursor-spark';
+    spark.style.width = size+'px';
+    spark.style.height = size+'px';
+    spark.style.left = e.clientX + (Math.random()*10-5) + 'px';
+    spark.style.top = e.clientY + (Math.random()*10-5) + 'px';
+    layer.appendChild(spark);
+    setTimeout(()=>spark.remove(), 900);
+  }, {passive:true});
+}
+
+/* ---------------- init ---------------- */
+buildDome();
+loadState();
+initCursorSparkles();
+})();
+</script>
+</body>
+</html>
